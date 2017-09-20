@@ -11,7 +11,7 @@ assembly_object_files := $(patsubst src/arch/$(arch)/%.asm, \
 
 .PHONY: all clean run iso
 
-all: $(kernel) $(iso)
+all: $(iso)
 
 clean:
 	@rm -r $(build_dir)
