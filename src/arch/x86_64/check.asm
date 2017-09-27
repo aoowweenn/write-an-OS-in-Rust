@@ -56,6 +56,7 @@ check_long_mode:
     cpuid
     cmp edx, 1 << 29
     jz .no_long_mode
+    ret
 .no_long_mode
     mov al, "2"
     jmp error
