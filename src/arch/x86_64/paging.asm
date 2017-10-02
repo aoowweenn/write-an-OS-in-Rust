@@ -1,5 +1,8 @@
 global set_up_page_tables
 global enable_paging
+global gdt64
+global gdt64.code
+global gdt64.pointer
 
 %define PRESENT     (1)
 %define WRITABLE    (1 << 1)
@@ -69,3 +72,13 @@ p2_table:       ; Page-Directory (PD)
     resb 4096
 p1_table:       ; Page Table (PT)
     resb 4096
+
+section .rodata
+gdt64: ; initialize GDT with code segment configuration
+; Although we have paging mechanism, this setup is necessary for long mode.
+    dq 0 ; zeroth entry
+.code equ $ - gdt64
+    dq (1 << 43) | (1 << 44) | (1 << 47) | (1 << 53)
+.pointer:
+    dw $ - gdt64 - 1 ; sizeof(GDT) - 1
+    dq gdt64

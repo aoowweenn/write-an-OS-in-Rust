@@ -7,6 +7,14 @@ extern check_long_mode
 extern set_up_page_tables
 extern enable_paging
 
+; paging.asm
+extern gdt64
+extern gdt64.pointer
+extern gdt64.code
+
+; long_mode_init.asm
+extern long_mode_start
+
 section .text
 bits 32
 
@@ -19,6 +27,9 @@ start:
 
     call set_up_page_tables
     call enable_paging
+
+    lgdt [gdt64.pointer]
+    jmp gdt64.code:long_mode_start
 
     ; print `OK` to screen
     mov dword [0xb8000], 0x2f4b2f4f
