@@ -1,4 +1,5 @@
 global set_up_page_tables
+global enable_paging
 
 %define PRESENT     (1)
 %define WRITABLE    (1 << 1)
@@ -35,6 +36,28 @@ set_up_page_tables:
     jne .map_p2_table
 
     ret
+
+enable_paging:
+    mov eax, p4_table
+    mov cr3, eax
+    ; enable PAE
+    mov eax, cr4
+    or eax, 1 << 5
+    mov cr4, eax
+
+    ; enable long mode
+    mov ecx, 0xC0000080
+    rdmsr
+    or eax, 1 << 8
+    wrmsr
+
+    ; enable paging
+    mov eax, cr0
+    or eax, 1 << 31
+    mov cr0, eax
+    
+    ret
+    
 
 section .bss
 align 4096
