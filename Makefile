@@ -1,4 +1,6 @@
 arch ?= x86_64
+target ?= $(arch)-my_os
+rust_os := target/$(target)/debug/libmy_os.a
 build_dir ?= /dev/shm/build
 kernel := $(build_dir)/kernel-$(arch).bin
 iso := $(build_dir)/os-$(arch).iso
@@ -28,8 +30,11 @@ $(iso): $(kernel) $(grub_cfg)
 	@grub-mkrescue -o $(iso) $(build_dir)/isofiles 2> /dev/null
 	@rm -r $(build_dir)/isofiles
 
-$(kernel): $(assembly_object_files) $(linker_script)
-	@ld -n -T $(linker_script) -o $(kernel) $(assembly_object_files)
+$(kernel): kernel $(assembly_object_files) $(linker_script)
+	@ld -n -T $(linker_script) -o $(kernel) $(assembly_object_files) $(rust_os)
+
+kernel:
+	@xargo build --target $(target)
 
 # compile assembly files
 $(build_dir)/arch/$(arch)/%.o: src/arch/$(arch)/%.asm
