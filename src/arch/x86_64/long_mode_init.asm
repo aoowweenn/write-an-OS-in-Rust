@@ -1,4 +1,5 @@
 global long_mode_start
+extern rust_main
 
 section .text
 
@@ -13,6 +14,10 @@ bits 32
 
 long_mode_start:
 bits 64
+
+    ; enter rust world
+    call rust_main
+
     ; print "OKAY"
     mov rax, 0x2F592F412F4B2F4F
     mov qword [0xb8000] , rax
