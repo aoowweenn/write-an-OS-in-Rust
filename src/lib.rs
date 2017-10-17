@@ -3,6 +3,8 @@
 
 extern crate rlibc;
 
+mod vga_buffer;
+
 #[no_mangle]
 pub extern fn rust_main() {
     let hello = b"Hello World";
