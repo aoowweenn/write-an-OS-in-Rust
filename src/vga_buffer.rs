@@ -1,4 +1,6 @@
 use volatile::Volatile;
+use core::fmt;
+use core::fmt::Write;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
@@ -57,17 +59,14 @@ pub struct Writer {
 impl Writer {
     fn new() -> Writer {
         Writer {
-            row_position: BUFFER_HEIGHT - 1,
+            row_position: BUFFER_HEIGHT - 1, // TODO: set 0
             column_position: 0,
             color_code: ColorCode::new(Color::Blue, Color::White),
             buffer: unsafe { Unique::new_unchecked(0xb8000 as *mut _) },
         }
     }
 
-    pub fn write_str(&mut self, s: &str) {
-        s.bytes().for_each(|x| self.write_byte(x));
-    }
-    pub fn write_byte(&mut self, byte: u8) {
+    fn write_byte(&mut self, byte: u8) {
         if self.column_position >= BUFFER_WIDTH {
             self.new_line();
         }
@@ -92,12 +91,41 @@ impl Writer {
     }
 
     fn new_line(&mut self) {
-        unimplemented!();
+        (1..BUFFER_HEIGHT).for_each(|row| {
+            (0..BUFFER_WIDTH).for_each(|col| {
+                let buffer = self.buffer();
+                let character = buffer.chars[row][col].read();
+                buffer.chars[row - 1][col].write(character);
+            })
+        });
+        let mut row = self.row_position;
+        if row < BUFFER_HEIGHT - 1 {
+            row += 1;
+        }
+        self.clear_row(row);
+        self.row_position = row;
+        self.column_position = 0;
+    }
+
+    fn clear_row(&mut self, row: usize) {
+        let blank = ScreenChar {
+            ascii_character: b' ',
+            color_code: self.color_code,
+        };
+        (0..BUFFER_WIDTH).for_each(|col| self.buffer().chars[row][col].write(blank));
+    }
+}
+
+impl Write for Writer {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        s.bytes().for_each(|x| self.write_byte(x));
+        Ok(())
     }
 }
 
 pub fn print_something() {
     let mut writer = Writer::new();
-    writer.write_byte(b'a');
-    writer.write_str("Second Hello");
+    writer.write_byte(b'H');
+    writer.write_str("ello").unwrap();
+    write!(writer, " World\n{}", 3.1415926).unwrap();
 }
