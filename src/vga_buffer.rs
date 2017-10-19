@@ -1,6 +1,8 @@
-use volatile::Volatile;
 use core::fmt;
 use core::fmt::Write;
+
+use volatile::Volatile;
+use spin::Mutex;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
@@ -57,11 +59,11 @@ pub struct Writer {
 }
 
 impl Writer {
-    fn new() -> Writer {
+    const fn new() -> Writer {
         Writer {
-            row_position: BUFFER_HEIGHT - 1, // TODO: set 0
+            row_position: BUFFER_HEIGHT - 1, // TODO: set 0 to support scrolling?
             column_position: 0,
-            color_code: ColorCode::new(Color::Blue, Color::White),
+            color_code: ColorCode::new(Color::LightGreen, Color::Black),
             buffer: unsafe { Unique::new_unchecked(0xb8000 as *mut _) },
         }
     }
@@ -123,9 +125,13 @@ impl Write for Writer {
     }
 }
 
+pub static WRITER: Mutex<Writer> = Mutex::new(Writer::new());
+
 pub fn print_something() {
     let mut writer = Writer::new();
     writer.write_byte(b'H');
     writer.write_str("ello").unwrap();
-    write!(writer, " World\n{}", 3.1415926).unwrap();
+    write!(writer, " World\n{}\n", 3.1415926).unwrap();
+    WRITER.lock().write_str("static Hello\n").unwrap();
+    write!(WRITER.lock(), "{}\n", 3.1415926).unwrap();
 }
