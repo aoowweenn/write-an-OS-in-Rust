@@ -1,3 +1,5 @@
+use volatile::Volatile;
+
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -40,7 +42,7 @@ const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
 
 struct Buffer {
-    chars: [[ScreenChar; BUFFER_WIDTH]; BUFFER_HEIGHT],
+    chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
 use core::ptr::Unique;
@@ -61,6 +63,10 @@ impl Writer {
             buffer: unsafe { Unique::new_unchecked(0xb8000 as *mut _) },
         }
     }
+
+    pub fn write_str(&mut self, s: &str) {
+        s.bytes().for_each(|x| self.write_byte(x));
+    }
     pub fn write_byte(&mut self, byte: u8) {
         if self.column_position >= BUFFER_WIDTH {
             self.new_line();
@@ -74,10 +80,10 @@ impl Writer {
         let row = self.row_position;
         let col = self.column_position;
         let color = self.color_code;
-        self.buffer().chars[row][col] = ScreenChar {
+        self.buffer().chars[row][col].write(ScreenChar {
             ascii_character: byte,
             color_code: color,
-        };
+        });
         self.column_position += 1;
     }
 
@@ -93,4 +99,5 @@ impl Writer {
 pub fn print_something() {
     let mut writer = Writer::new();
     writer.write_byte(b'a');
+    writer.write_str("Second Hello");
 }
