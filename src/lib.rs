@@ -8,22 +8,16 @@ extern crate rlibc;
 extern crate spin;
 extern crate volatile;
 
+#[macro_use]
 mod vga_buffer;
 
 #[no_mangle]
 pub extern "C" fn rust_main() {
-    let hello = b"Hello World";
-    let color: u8 = 0x1F; // white fg, blue bg
-
-    let mut hello_buffer = [color; 22];
-    for (i, ch) in hello.into_iter().enumerate() {
-        hello_buffer[i * 2] = *ch;
-    }
-
-    let buffer_ptr = (0xB8000 + 1988) as *mut _;
-    unsafe { *buffer_ptr = hello_buffer };
-
-    vga_buffer::print_something();
+    vga_buffer::clear_screen();
+    println!("Hello World{}", {
+        println!("no deadlock");
+        "!"
+    });
 }
 
 #[lang = "eh_personality"]

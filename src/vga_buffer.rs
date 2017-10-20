@@ -1,8 +1,21 @@
-use core::fmt;
-use core::fmt::Write;
-
 use volatile::Volatile;
 use spin::Mutex;
+
+macro_rules! println {
+    ($fmt:expr) => (print!(concat!($fmt, "\n")));
+    ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
+}
+
+macro_rules! print {
+    ($($arg:tt)*) => ({
+        $crate::vga_buffer::print(format_args!($($arg)*));
+    });
+}
+
+pub fn print(args: ::core::fmt::Arguments) {
+    use core::fmt::Write;
+    WRITER.lock().write_fmt(args).unwrap();
+}
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
@@ -61,7 +74,7 @@ pub struct Writer {
 impl Writer {
     const fn new() -> Writer {
         Writer {
-            row_position: BUFFER_HEIGHT - 1, // TODO: set 0 to support scrolling?
+            row_position: 0,
             column_position: 0,
             color_code: ColorCode::new(Color::LightGreen, Color::Black),
             buffer: unsafe { Unique::new_unchecked(0xb8000 as *mut _) },
@@ -93,15 +106,17 @@ impl Writer {
     }
 
     fn new_line(&mut self) {
-        (1..BUFFER_HEIGHT).for_each(|row| {
-            (0..BUFFER_WIDTH).for_each(|col| {
-                let buffer = self.buffer();
-                let character = buffer.chars[row][col].read();
-                buffer.chars[row - 1][col].write(character);
-            })
-        });
         let mut row = self.row_position;
-        if row < BUFFER_HEIGHT - 1 {
+
+        if row == BUFFER_HEIGHT - 1 {
+            (1..BUFFER_HEIGHT).for_each(|row| {
+                (0..BUFFER_WIDTH).for_each(|col| {
+                    let buffer = self.buffer();
+                    let character = buffer.chars[row][col].read();
+                    buffer.chars[row - 1][col].write(character);
+                })
+            });
+        } else {
             row += 1;
         }
         self.clear_row(row);
@@ -118,8 +133,8 @@ impl Writer {
     }
 }
 
-impl Write for Writer {
-    fn write_str(&mut self, s: &str) -> fmt::Result {
+impl ::core::fmt::Write for Writer {
+    fn write_str(&mut self, s: &str) -> ::core::fmt::Result {
         s.bytes().for_each(|x| self.write_byte(x));
         Ok(())
     }
@@ -127,11 +142,6 @@ impl Write for Writer {
 
 pub static WRITER: Mutex<Writer> = Mutex::new(Writer::new());
 
-pub fn print_something() {
-    let mut writer = Writer::new();
-    writer.write_byte(b'H');
-    writer.write_str("ello").unwrap();
-    write!(writer, " World\n{}\n", 3.1415926).unwrap();
-    WRITER.lock().write_str("static Hello\n").unwrap();
-    write!(WRITER.lock(), "{}\n", 3.1415926).unwrap();
+pub fn clear_screen() {
+    (0..BUFFER_HEIGHT).for_each(|row| WRITER.lock().clear_row(row));
 }

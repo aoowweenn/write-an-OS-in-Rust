@@ -37,5 +37,5 @@ start:
 
 section .bss
 stack_bottom:
-    resb 256
+    resb 1024
 stack_top:
