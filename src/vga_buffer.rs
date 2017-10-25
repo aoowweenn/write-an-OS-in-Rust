@@ -89,6 +89,9 @@ impl Writer {
         if byte == b'\n' {
             self.new_line();
             return;
+        } else if byte == b'\t' {
+            self.column_position += 4;
+            return;
         }
 
         let row = self.row_position;

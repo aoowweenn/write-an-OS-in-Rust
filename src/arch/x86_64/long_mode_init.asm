@@ -15,7 +15,7 @@ bits 32
 long_mode_start:
 bits 64
 
-    ; enter rust world
+    ; rust_main(edi);
     call rust_main
 
     ; print "OKAY"

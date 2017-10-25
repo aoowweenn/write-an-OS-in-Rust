@@ -21,6 +21,9 @@ bits 32
 start:
     mov esp, stack_top
 
+    ; ebx:= Multiboot2 info ptr
+    push ebx
+
     call check_multiboot
     call check_cpuid
     call check_long_mode
@@ -28,6 +31,7 @@ start:
     call set_up_page_tables
     call enable_paging
 
+    pop edi ; pass Multiboot2 info ptr to rust_main
     lgdt [gdt64.pointer]
     jmp gdt64.code:long_mode_start
 
@@ -37,5 +41,5 @@ start:
 
 section .bss
 stack_bottom:
-    resb 1024
+    resb 4096 * 4
 stack_top:
