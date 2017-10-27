@@ -5,10 +5,14 @@
 #![feature(asm)]
 #![no_std]
 
+extern crate itertools;
 extern crate multiboot2;
 extern crate rlibc;
 extern crate spin;
 extern crate volatile;
+
+use itertools::Itertools;
+use itertools::MinMaxResult::MinMax;
 
 #[macro_use]
 mod vga_buffer;
@@ -28,6 +32,41 @@ pub extern "C" fn rust_main(multiboot2_info_ptr: usize) {
     memory_map_tag.memory_areas().for_each(|area| {
         println!("\tstart: {:#x}, length: {:#x}", area.base_addr, area.length);
     });
+
+    let elf_sections_tag = boot_info
+        .elf_sections_tag()
+        .expect("Elf-sections tag required");
+
+    println!("kernel sections:");
+    let kernel_boundary = elf_sections_tag
+        .sections()
+        .inspect(|section| {
+            println!(
+                "\taddr: {:#x}, size: {:#x}, flags: {:#x}",
+                section.addr,
+                section.size,
+                section.flags
+            );
+        })
+        .map(|s| (s.addr, s.addr + s.size))
+        .minmax();
+
+    match kernel_boundary {
+        MinMax((kernel_start, _), (_, kernel_end)) => println!(
+            "kernel_start: {:#x}, kernel_end: {:#x}",
+            kernel_start,
+            kernel_end
+        ),
+        _ => (),
+    }
+
+    let multiboot_start = multiboot2_info_ptr;
+    let multiboot_end = multiboot_start + (boot_info.total_size as usize);
+    println!(
+        "multiboot_start: {:#x}, multiboot_end: {:#x}",
+        multiboot_start,
+        multiboot_end
+    );
 
     panic!("Hi, panic");
 }

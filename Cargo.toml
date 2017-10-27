@@ -11,3 +11,7 @@ rlibc = "1.0"
 volatile = "*"
 spin = "*"
 multiboot2 = "*"
+
+[dependencies.itertools]
+version = "*"
+default-features = false
