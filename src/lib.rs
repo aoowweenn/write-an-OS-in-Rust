@@ -51,14 +51,7 @@ pub extern "C" fn rust_main(multiboot2_info_ptr: usize) {
         .map(|s| (s.addr, s.addr + s.size))
         .minmax();
 
-    match kernel_boundary {
-        MinMax((kernel_start, _), (_, kernel_end)) => println!(
-            "kernel_start: {:#x}, kernel_end: {:#x}",
-            kernel_start,
-            kernel_end
-        ),
-        _ => (),
-    }
+    if let MinMax((kernel_start, _), (_, kernel_end)) = kernel_boundary { println!("kernel_start: {:#x}, kernel_end: {:#x}", kernel_start, kernel_end) }
 
     let multiboot_start = multiboot2_info_ptr;
     let multiboot_end = multiboot_start + (boot_info.total_size as usize);
@@ -75,6 +68,7 @@ pub extern "C" fn rust_main(multiboot2_info_ptr: usize) {
 extern "C" fn rust_eh_personality() {}
 #[lang = "panic_fmt"]
 #[no_mangle]
+#[cfg_attr(feature = "cargo-clippy", allow(empty_loop))]
 pub extern "C" fn rust_begin_panic(fmt: core::fmt::Arguments, file: &'static str, line: u32) -> ! {
     println!("\n\nPANIC in file {} at {}", file, line);
     println!("\t{}", fmt);

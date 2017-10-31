@@ -77,7 +77,7 @@ impl Writer {
             row_position: 0,
             column_position: 0,
             color_code: ColorCode::new(Color::LightGreen, Color::Black),
-            buffer: unsafe { Unique::new_unchecked(0xb8000 as *mut _) },
+            buffer: unsafe { Unique::new_unchecked(0xb_8000 as *mut _) },
         }
     }
 
