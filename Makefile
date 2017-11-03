@@ -11,7 +11,14 @@ assembly_source_files := $(wildcard src/arch/$(arch)/*.asm)
 assembly_object_files := $(patsubst src/arch/$(arch)/%.asm, \
 	$(build_dir)/arch/$(arch)/%.o, $(assembly_source_files))
 
-.PHONY: all clean run iso lint
+DEBUG ?= 1
+ifeq ($(DEBUG), 1)
+	cargoflag :=
+else
+	cargoflag := --release
+endif
+
+.PHONY: all clean run iso lint kernel
 
 all: $(iso)
 
@@ -38,7 +45,7 @@ $(kernel): kernel $(assembly_object_files) $(linker_script)
 	@ld -n --gc-sections -T $(linker_script) -o $(kernel) $(assembly_object_files) $(rust_os)
 
 kernel:
-	@xargo build
+	@xargo build $(cargoflag)
 
 # compile assembly files
 $(build_dir)/arch/$(arch)/%.o: src/arch/$(arch)/%.asm

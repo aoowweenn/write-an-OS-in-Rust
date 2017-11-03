@@ -1,9 +1,11 @@
+#![no_std]
 #![feature(lang_items)]
 #![feature(const_fn)]
 #![feature(unique)]
 #![feature(const_unique_new)]
 #![feature(asm)]
-#![no_std]
+#![feature(inclusive_range)]
+#![feature(range_contains)]
 
 extern crate itertools;
 extern crate multiboot2;
@@ -13,9 +15,12 @@ extern crate volatile;
 
 use itertools::Itertools;
 use itertools::MinMaxResult::MinMax;
+use memory::FrameAllocator;
 
 #[macro_use]
 mod vga_buffer;
+
+mod memory;
 
 #[no_mangle]
 pub extern "C" fn rust_main(multiboot2_info_ptr: usize) {
@@ -51,7 +56,17 @@ pub extern "C" fn rust_main(multiboot2_info_ptr: usize) {
         .map(|s| (s.addr, s.addr + s.size))
         .minmax();
 
-    if let MinMax((kernel_start, _), (_, kernel_end)) = kernel_boundary { println!("kernel_start: {:#x}, kernel_end: {:#x}", kernel_start, kernel_end) }
+    let (kernel_start, kernel_end) = if let MinMax((s, _), (_, e)) = kernel_boundary {
+        (s, e)
+    } else {
+        panic!("No valid kernel boundary!");
+    };
+
+    println!(
+        "kernel_start: {:#x}, kernel_end: {:#x}",
+        kernel_start,
+        kernel_end
+    );
 
     let multiboot_start = multiboot2_info_ptr;
     let multiboot_end = multiboot_start + (boot_info.total_size as usize);
@@ -60,6 +75,21 @@ pub extern "C" fn rust_main(multiboot2_info_ptr: usize) {
         multiboot_start,
         multiboot_end
     );
+
+    let mut frame_allocator = memory::AreaFrameAllocator::new(
+        kernel_start as usize,
+        kernel_end as usize,
+        multiboot_start,
+        multiboot_end,
+        memory_map_tag.memory_areas(),
+    );
+
+    for i in 0.. {
+        if let None = frame_allocator.allocate() {
+            println!("Total allocated frame: {}", i);
+            break;
+        }
+    }
 
     panic!("Hi, panic");
 }
